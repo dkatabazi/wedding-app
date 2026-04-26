@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Wedding Planner</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; padding: 20px; background: #f8fafc; }
+        .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; background: white; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background: #1e293b; color: white; }
+        input { padding: 8px; margin: 5px 0; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        button { background: #d4af37; color: white; border: none; padding: 10px; width: 100%; border-radius: 4px; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>💍 My Weddings</h1>
+    
+    <div class="card">
+        <h3>Add New Wedding</h3>
+        <input type="text" id="couple" placeholder="Couple Names">
+        <input type="date" id="date">
+        <button onclick="saveWedding()">Save Wedding</button>
+    </div>
+
+    <div class="card" style="padding:0; overflow-x:auto;">
+        <table>
+            <thead>
+                <tr><th>Couple</th><th>Date</th></tr>
+            </thead>
+            <tbody id="list"></tbody>
+        </table>
+    </div>
+
+    <script>
+        // Load data on start
+        fetch('/api/events').then(res => res.json()).then(data => {
+            const list = document.getElementById('list');
+            data.forEach(ev => {
+                list.innerHTML += `<tr><td>${ev.couple}</td><td>${ev.date}</td></tr>`;
+            });
+        });
+
+        async function saveWedding() {
+            const wedding = {
+                couple: document.getElementById('couple').value,
+                date: document.getElementById('date').value
+            };
+            await fetch('/api/events', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(wedding)
+            });
+            location.reload();
+        }
+    </script>
+</body>
+</html>
