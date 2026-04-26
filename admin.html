@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Resource Planner</title>
+    <style>
+        :root { --navy: #0a192f; --gold: #c5a059; --white: #e6f1ff; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--navy); color: var(--white); padding: 15px; margin: 0; }
+        .container { max-width: 600px; margin: auto; }
+        .card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; border: 1px solid var(--gold); margin-bottom: 15px; }
+        h1, h2 { color: var(--gold); margin-top: 0; text-align: center; }
+        label { display: block; margin: 10px 0 5px; color: var(--gold); font-size: 0.9em; }
+        input, select { width: 100%; padding: 12px; border-radius: 6px; border: none; box-sizing: border-box; background: white; font-weight: bold; }
+        .price-tag { font-size: 0.8em; color: #8892b0; margin-top: 2px; }
+        button { width: 100%; padding: 15px; background: var(--gold); color: var(--navy); border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 20px; font-size: 1.1em; }
+        table { width: 100%; background: white; color: #333; border-radius: 8px; border-collapse: collapse; margin-top: 15px; font-size: 0.9em; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #eee; }
+        .grand-total { background: var(--gold); color: var(--navy); padding: 15px; border-radius: 8px; text-align: center; font-size: 1.3em; font-weight: bold; margin-top: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Event Resource Manager</h1>
+
+        <div class="card">
+            <h2>New Booking</h2>
+            
+            <label>Event Name / Description</label>
+            <input type="text" id="eventName" placeholder="e.g. Mukasa Burial or Sarah Wedding">
+
+            <label>Number of People (Food & Chairs)</label>
+            <input type="number" id="peopleCount" value="50">
+            <div class="price-tag">Food: 20,000/person | Chair: 500/each</div>
+
+            <label>Number of Tents Needed</label>
+            <input type="number" id="tentCount" value="1">
+            <div class="price-tag">Tent: 100/each</div>
+
+            <label>Other Services (Decor, Sound, etc.)</label>
+            <input type="number" id="otherCosts" value="0">
+
+            <button onclick="calculateAndSave()">Save & Generate Invoice</button>
+        </div>
+
+        <div class="card">
+            <h2>Recent Transactions</h2>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead>
+                        <tr><th>Event</th><th>People</th><th>Total (UGX)</th></tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+            <div class="grand-total" id="grandTotal">Total Revenue: 0</div>
+        </div>
+    </div>
+
+    <script>
+        async function loadData() {
+            const res = await fetch('/api/events');
+            const data = await res.json();
+            const body = document.getElementById('tableBody');
+            let totalRev = 0;
+            body.innerHTML = '';
+            
+            data.forEach(item => {
+                totalRev += item.total;
+                body.innerHTML += `<tr>
+                    <td><strong>${item.name}</strong></td>
+                    <td>${item.people}</td>
+                    <td>${item.total.toLocaleString()}</td>
+                </tr>`;
+            });
+            document.getElementById('grandTotal').innerText = `Total Revenue: ${totalRev.toLocaleString()}`;
+        }
+
+        async function calculateAndSave() {
+            const name = document.getElementById('eventName').value;
+            const people = parseInt(document.getElementById('peopleCount').value) || 0;
+            const tents = parseInt(document.getElementById('tentCount').value) || 0;
+            const other = parseFloat(document.getElementById('otherCosts').value) || 0;
+
+            // PRICE LOGIC
+            const foodCost = people * 20000;
+            const chairCost = people * 500;
+            const tentCost = tents * 100;
+            const total = foodCost + chairCost + tentCost + other;
+
+            if(!name) return alert("Enter event name");
+
+            await fetch('/api/events', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ name, people, total })
+            });
+
+            document.getElementById('eventName').value = '';
+            loadData();
+        }
+        loadData();
+    </script>
+</body>
+</html>
