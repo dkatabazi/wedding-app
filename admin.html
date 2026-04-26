@@ -2,112 +2,59 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard | Royal Haven</title>
+    <title>Royal Haven Admin</title>
     <style>
-        :root { --navy: #0a192f; --gold: #c5a059; --white: #e6f1ff; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--navy); color: var(--white); padding: 20px; margin: 0; }
-        .container { max-width: 800px; margin: auto; }
-        .card { background: rgba(255,255,255,0.05); padding: 25px; border-radius: 15px; border: 1px solid var(--gold); margin-bottom: 25px; }
-        h1, h2 { color: var(--gold); text-transform: uppercase; letter-spacing: 1px; }
-        input, select { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: none; box-sizing: border-box; background: var(--white); font-weight: bold; }
-        button { width: 100%; padding: 15px; background: var(--gold); color: var(--navy); border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1.1em; transition: 0.3s; }
-        button:hover { background: #e0b970; }
-        .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; margin-top: 20px; }
-        .img-item { border: 1px solid var(--gold); border-radius: 8px; overflow: hidden; position: relative; height: 120px; }
-        .img-item img { width: 100%; height: 100%; object-fit: cover; }
-        .delete-btn { position: absolute; top: 5px; right: 5px; background: red; color: white; border: none; border-radius: 50%; cursor: pointer; width: 25px; height: 25px; }
-        table { width: 100%; background: white; color: #333; border-radius: 10px; overflow: hidden; border-collapse: collapse; margin-top: 15px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
-        .revenue-box { background: var(--gold); color: var(--navy); padding: 20px; border-radius: 10px; text-align: center; font-size: 1.5em; font-weight: bold; }
+        body { font-family: sans-serif; padding: 20px; background: #f4f4f4; }
+        .admin-container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        input { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; }
+        button { background: #c5a059; color: #0a192f; padding: 10px 20px; border: none; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Admin Control Center</h1>
-
-        <div class="card">
-            <h2>Add to Website Gallery</h2>
-            <p style="font-size: 0.8em; color: #8892b0;">Upload your photos to PostImages.org and paste the "Direct Link" here.</p>
-            <input type="text" id="newImgUrl" placeholder="Paste Image URL">
-            <input type="text" id="imgCaption" placeholder="What is this? (e.g., 100-seater tent)">
-            <button onclick="addPhoto()">Update Live Gallery</button>
-            <div id="galleryAdmin" class="gallery-grid"></div>
-        </div>
-
-        <div class="card">
-            <h2>Business Performance</h2>
-            <div id="bookingLog">
-                <table>
-                    <thead>
-                        <tr><th>Client</th><th>Guests</th><th>Total (UGX)</th></tr>
-                    </thead>
-                    <tbody id="tableBody"></tbody>
-                </table>
-            </div>
-            <div class="revenue-box" id="totalRev">Revenue: 0 UGX</div>
+    <div class="admin-container">
+        <h1>Add New Photo ⛺</h1>
+        <input type="text" id="imgUrl" placeholder="Paste Image URL here">
+        <input type="text" id="imgDesc" placeholder="Description (e.g. 50-seater tent)">
+        <button onclick="uploadPhoto()">Add to Gallery</button>
+        <hr>
+        <h2>Current Gallery</h2>
+        <div id="adminGallery">
+            <p>Gallery preview coming soon...</p>
         </div>
     </div>
 
     <script>
-        let appData = { bookings: [], inventory: [] };
+        async function uploadPhoto() {
+            // 1. Get the values you typed into the boxes
+            const imgUrl = document.getElementById('imgUrl').value;
+            const imgDesc = document.getElementById('imgDesc').value;
 
-        async function fetchData() {
-            const res = await fetch('/api/events');
-            appData = await res.json();
-            if(!appData.inventory) appData.inventory = [];
-            if(!appData.bookings) appData.bookings = [];
-            renderAll();
+            if (!imgUrl) {
+                alert("Please paste an image URL first!");
+                return;
+            }
+
+            // 2. Send the new photo data to your server
+            try {
+                const response = await fetch('/api/events', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: imgUrl, desc: imgDesc })
+                });
+
+                // 3. Let you know if it worked
+                if (response.ok) {
+                    alert("Photo successfully added to Royal Haven!");
+                    document.getElementById('imgUrl').value = '';
+                    document.getElementById('imgDesc').value = '';
+                } else {
+                    alert("Hmm, there was an issue saving the photo.");
+                }
+            } catch (error) {
+                console.error("Upload error:", error);
+                alert("Network error. Could not reach the server.");
+            }
         }
-
-        function renderAll() {
-            // Render Gallery
-            const gallery = document.getElementById('galleryAdmin');
-            gallery.innerHTML = '';
-            appData.inventory.forEach((img, i) => {
-                gallery.innerHTML += `
-                    <div class="img-item">
-                        <img src="${img.url}">
-                        <button class="delete-btn" onclick="removePhoto(${i})">×</button>
-                    </div>`;
-            });
-
-            // Render Bookings
-            const body = document.getElementById('tableBody');
-            let total = 0;
-            body.innerHTML = '';
-            appData.bookings.forEach(b => {
-                total += b.total;
-                body.innerHTML += `<tr><td>${b.name}</td><td>${b.people}</td><td>${b.total.toLocaleString()}</td></tr>`;
-            });
-            document.getElementById('totalRev').innerText = `Revenue: ${total.toLocaleString()} UGX`;
-        }
-
-        async function addPhoto() {
-            const url = document.getElementById('newImgUrl').value;
-            const desc = document.getElementById('imgCaption').value;
-            if(!url) return alert("Paste a URL first");
-            appData.inventory.push({ url, desc });
-            await save();
-            document.getElementById('newImgUrl').value = '';
-            document.getElementById('imgCaption').value = '';
-        }
-
-        async function removePhoto(index) {
-            appData.inventory.splice(index, 1);
-            await save();
-        }
-
-        async function save() {
-            await fetch('/api/events', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(appData)
-            });
-            fetchData();
-        }
-
-        fetchData();
     </script>
 </body>
 </html>
